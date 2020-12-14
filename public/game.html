@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Tic Tac Tide</title>
+  <meta charset="utf-8">
+  <meta name="description" content="Tic Tac Tide - a WebSocket example with Tide">
+  <meta name="author" content="Javier Viola">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta property="og:title" content="Tic Tac Tide - a WebSocket example with Tide" />
+
+  <link href='//fonts.googleapis.com/css?family=Raleway:400,300,600' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="/public/styles/normalize.css">
+  <link rel="stylesheet" href="/public/styles/skeleton.css">
+  <link rel="stylesheet" href="/public/styles/custom.css">
+
+<style>
+section {
+    padding-top: 20px;
+    text-align: center;
+}
+
+span.tide {
+color: #444;
+    padding: 5px;
+    font-size: 4.7rem;
+    border: 1px solid #DEA584;
+    border-radius: 5px;
+    background-color: #DEA584;
+    box-shadow: 0 0 5px rgba(0,0,0,.1), 0 3px 6px rgba(0,0,0,.05);
+}
+
+.game--container {
+    display: grid;
+    grid-template-columns: repeat(3, auto);
+    width: 306px;
+    margin: 50px auto;
+}
+
+.cell {
+    font-family: "Permanent Marker", cursive;
+    width: 100px;
+    height: 100px;
+    box-shadow: 0 0 0 1px #333333;
+    border: 1px solid #333333;
+    cursor: pointer;
+
+    line-height: 100px;
+    font-size: 60px;
+}
+
+div.cell.x::after {
+  content: "X";
+}
+div.cell.o::after {
+  content: "O";
+}
+div.cell.win {
+  background: url(https://avatars2.githubusercontent.com/u/56456261?s=100&v=4);
+}
+div.cell.x.win::after, div.cell.o.win::after {
+  content: "";
+}
+
+button.hidden {
+  display: none;
+}
+
+h2.complete {
+  font-size: 2rem;
+  color: red;
+}
+</style>
+</head>
+
+<body>
+  <div class="container">
+    <nav class="navbar">
+      <div class="container">
+        <ul class="navbar-list">
+          <li class="navbar-item"><a class="navbar-link" href="/">Home</a></li>
+          <li class="navbar-item"><a class="navbar-link"
+              href="">Project</a></li>
+        </ul>
+      </div>
+    </nav>
+    <div class="container" id="main">
+    <section>
+        <h1 class="game--title">Tic Tac <span class="tide">Tide</span></h1>
+        <div class="game--container">
+            <div data-cell-index="0" class="cell"></div>
+            <div data-cell-index="1" class="cell"></div>
+            <div data-cell-index="2" class="cell"></div>
+            <div data-cell-index="3" class="cell"></div>
+            <div data-cell-index="4" class="cell"></div>
+            <div data-cell-index="5" class="cell"></div>
+            <div data-cell-index="6" class="cell"></div>
+            <div data-cell-index="7" class="cell"></div>
+            <div data-cell-index="8" class="cell"></div>
+        </div>
+        <h2 class="game--status"></h2>
+        <button class="game--restart">Restart Game</button>
+    </section>
+    </div>
+  </div>
+
+  <script src="public/js/game.js"></script>
+</body>
+
+</html>

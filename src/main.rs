@@ -131,10 +131,10 @@ async fn main() -> Result<(), std::io::Error> {
     env_logger::init();
 
     let mut app = tide::with_state(State::new());
-    app.with(tide::sessions::SessionMiddleware::new(
-        tide::sessions::MemoryStore::new(),
-        std::env::var("SESSION_SECRET").unwrap().as_bytes(),
-    ));
+    // app.with(tide::sessions::SessionMiddleware::new(
+    //     tide::sessions::MemoryStore::new(),
+    //     std::env::var("SESSION_SECRET").unwrap().as_bytes(),
+    // ));
 
     let mut state = app.state().clone();
     async_std::task::spawn(async move {

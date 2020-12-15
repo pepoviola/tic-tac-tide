@@ -174,5 +174,5 @@ document.querySelectorAll('.cell').forEach(cell => cell.addEventListener('click'
 document.querySelector('.game--restart').addEventListener('click', handleRestartGame);
 
 window.addEventListener('beforeunload', function(event) {
-    io.send(`LEAVE:${localPlayer}`);
+    // io.send(`LEAVE:${localPlayer}`);
 });

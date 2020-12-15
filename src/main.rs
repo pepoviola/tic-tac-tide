@@ -131,10 +131,6 @@ async fn main() -> Result<(), std::io::Error> {
     env_logger::init();
 
     let mut app = tide::with_state(State::new());
-    // app.with(tide::sessions::SessionMiddleware::new(
-    //     tide::sessions::MemoryStore::new(),
-    //     std::env::var("SESSION_SECRET").unwrap().as_bytes(),
-    // ));
 
     let mut state = app.state().clone();
     async_std::task::spawn(async move {
@@ -248,7 +244,9 @@ async fn main() -> Result<(), std::io::Error> {
 
     app.at("/public").serve_dir("./public/")?;
 
-    app.listen("127.0.0.1:8080").await?;
+    let port = std::env::var("PORT").unwrap_or_else(|_| "8080".to_string());
+    let addr = format!("0.0.0.0:{}", port);
+    app.listen(addr).await?;
 
     Ok(())
 }

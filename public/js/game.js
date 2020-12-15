@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 break;
             case 'INIT':
                 console.log( 'init' );
-                localPlayer = data.player == "0" ? "X" : "O";
+                localPlayer = data.player == "X" ? "X" : "O";
                 gameState = data.play_book;
                 // redraw
                 redrawPlayBook();
@@ -41,8 +41,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 document.querySelector('.game--restart').classList.add("hidden");
                 gameActive = false;
                 break;
-            case 'leave':
+            case 'LEAVE':
                 console.log( 'leave' );
+                alert( 'Other player just LEAVE the game' );
                 break;
         };
     });
@@ -165,5 +166,5 @@ document.querySelectorAll('.cell').forEach(cell => cell.addEventListener('click'
 document.querySelector('.game--restart').addEventListener('click', handleRestartGame);
 
 window.addEventListener('beforeunload', function(event) {
-    // io.send(`LEAVE:${localPlayer}`);
+    io.send(`LEAVE:${localPlayer}`);
 });

@@ -18,10 +18,16 @@ enum Message {
 }
 
 #[derive(Clone)]
+struct Player {
+    id: String, // connection Id
+    wsc : WebSocketConnection,
+    label : String
+}
+#[derive(Clone)]
 struct Board {
     id: String, // id of the board
-    play_book: [String;9], // Arc<RwLock<[String;9]>>,
-    wscs: Vec<WebSocketConnection> //BroadcastChannel<Message>
+    play_book: [String;9],
+    players: Vec<Player>
 }
 
 
@@ -29,38 +35,40 @@ struct Board {
 struct State {
     broadcaster: BroadcastChannel<Message>,
     boards: Arc<RwLock<HashMap<String,Board>>>,
-    play_book: Arc<RwLock<[String;9]>>,
 }
 
 impl State {
     fn new() -> Self {
-        let plays:[String;9] = Default::default();
         Self {
             broadcaster: BroadcastChannel::new(),
             boards: Default::default(),
-            play_book: Arc::new(RwLock::new(plays)),
         }
     }
 
-    async fn add_player_to_board(&self, board_id: &str, wsc: WebSocketConnection ) -> Result<(usize,[String;9]),String> { // tide::Result<()> {
+    async fn add_player_to_board(&self, board_id: &str, mut player: Player ) -> Result<(String,[String;9]),String> { // tide::Result<()> {
         let mut boards = self.boards.write().await;
         match boards.entry(board_id.to_owned()) {
             Entry::Vacant(_) => {
+                player.label = String::from("X");
                 let b = Board {
                     id : board_id.to_owned(),
                     play_book : Default::default(),
-                    wscs : vec![wsc],
+                    players: vec![player]
                 };
                 boards.insert(board_id.to_owned(), b );
-                Ok((0,boards.get(board_id).unwrap().play_book.clone()))
+                Ok((String::from("X"),boards.get(board_id).unwrap().play_book.clone()))
             },
             Entry::Occupied(mut board) => {
                 // check if we had the two players
-                let mut b = board.get_mut().wscs.clone();
-                if b.len() < 2 {
-                    b.push( wsc );
-                    board.get_mut().wscs = b;
-                    Ok((1,board.get().play_book.clone()))
+                let mut players = board.get_mut().players.clone();
+                if players.len() < 2 {
+                    let other_player = &players[0];
+                    player.label = if other_player.label == "X" { String::from("O")} else { String::from("O") };
+
+                    let label = player.label.clone();
+                    players.push( player );
+                    board.get_mut().players = players;
+                    Ok((label,board.get().play_book.clone()))
                 } else {
                     return Err(String::from("COMPLETE"))
                 }
@@ -97,6 +105,22 @@ impl State {
         self.send_message(board_id, Message::Command{ cmd, play_book : Default::default() }).await
     }
 
+    async fn leave_board( &self, board_id: &str, player_id: &str) -> tide::Result<()> {
+        let mut boards = self.boards.write().await;
+        let mut board = boards.get_mut(board_id).unwrap();
+
+        let p = board.players.clone().into_iter().filter(|x| {
+            x.id != player_id
+         }).collect::<Vec<Player>>();
+        board.players = p;
+        let pb = board.play_book.clone();
+
+        drop(boards);
+
+        let cmd = String::from("LEAVE");
+        self.send_message(board_id, Message::Command{ cmd, play_book : pb }).await
+    }
+
 
     async fn send_message(&self, board_id: &str, message: Message) -> tide::Result<()> {
         let mut boards = self.boards.write().await;
@@ -109,9 +133,9 @@ impl State {
                 match message {
                     Message::Command { cmd, play_book } => {
                         println!("{} messages", board_id);
-                        for wsc in &board.get_mut().wscs {
+                        for player in &board.get_mut().players {
                             println!("{} message {}", board_id, cmd);
-                            wsc.send_json(&json!({
+                            player.wsc.send_json(&json!({
                                 "cmd": cmd,
                                 "play_book" : play_book.clone()
                             })).await?
@@ -143,7 +167,6 @@ async fn main() -> Result<(), std::io::Error> {
     });
 
     app.at("/:id")
-        // .with(WebsocketMiddleware::new(
         .with(WebSocket::new(
             |request: Request<State>, wsc| async move {
                 let key = request.param("id")?;
@@ -156,12 +179,20 @@ async fn main() -> Result<(), std::io::Error> {
                     broadcaster.clone().map(|r| Either::Right(r)),
                 );
 
+                let petnames = petname::Petnames::default();
+                let player_id = petnames.generate_one(2, ".");
 
-                match state.add_player_to_board(key, wsc.clone()).await {
-                    Ok( ( player, play_book) ) => {
+                let player = Player {
+                    id : player_id.clone(),
+                    wsc : wsc.clone(),
+                    label: String::from("")
+                };
+
+                match state.add_player_to_board(key, player).await {
+                    Ok( ( player_label, play_book) ) => {
                         wsc.send_json(&json!({
                             "cmd":"INIT",
-                            "player":player,
+                            "player":player_label,
                             "play_book" : play_book.clone()
                         })).await?
                     }
@@ -186,17 +217,10 @@ async fn main() -> Result<(), std::io::Error> {
                                     state.reset_board(key).await?;
                                 },
                                 "LEAVE" => {
-                                    // state.leave_board(key).await?;
+                                    state.leave_board(key, &player_id).await?;
                                 }
                                 _ => println!( "INVALID message")
                             }
-                            // if parts[0] == "LEAVE" {
-                            //     // state.remove_player(player_index.unwrap()).await?;
-                            // } else if parts[0] == "PLAY" {
-                            //     state.make_play(parts[1].parse().unwrap(), parts[2].parse().unwrap(), key).await?;
-                            // } else {
-                            //     println!( "INVALID message")
-                            // };
                         }
 
 
@@ -231,7 +255,7 @@ async fn main() -> Result<(), std::io::Error> {
         let mut boards = state.boards.write().await;
 
         let board = boards.iter_mut().find(|x| {
-           x.1.wscs.len() == 1
+           x.1.players.len() == 1
         });
 
         if let Some(b) = board {

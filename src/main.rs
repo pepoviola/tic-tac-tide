@@ -91,6 +91,8 @@ impl State {
 
         board.play_book = Default::default();
 
+        drop(boards);
+
         let cmd = String::from("RESET");
         self.send_message(board_id, Message::Command{ cmd, play_book : Default::default() }).await
     }

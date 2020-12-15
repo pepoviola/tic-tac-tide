@@ -1,5 +1,3 @@
-use async_std::prelude::*;
-
 use std::collections::hash_map::{Entry,HashMap};
 use async_std::sync::{Arc, RwLock};
 use broadcaster::BroadcastChannel;
@@ -179,12 +177,14 @@ async fn main() -> Result<(), std::io::Error> {
                             let parts: Vec<&str> = message.split(":").collect();
 
                             match parts[0] {
-                                "LEAVE" => {},
                                 "PLAY" => {
                                     state.make_play_in_board(key, parts[1].parse().unwrap(), parts[2].parse().unwrap()).await?;
                                 },
                                 "RESET" => {
                                     state.reset_board(key).await?;
+                                },
+                                "LEAVE" => {
+                                    // state.leave_board(key).await?;
                                 }
                                 _ => println!( "INVALID message")
                             }

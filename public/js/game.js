@@ -51,7 +51,7 @@ document.addEventListener("DOMContentLoaded", function() {
 //
 const winningMessage = () => `Player ${currentPlayer} has won!`;
 const drawMessage = () => `Game ended in a draw!`;
-const currentPlayerTurn = () => `It's ${currentPlayer}'s turn. <span class="game--player">(You are ${localPlayer})</span>`;
+const currentPlayerTurn = () => `It's <span class="tide">${currentPlayer}</span>'s turn. <span class="game--player">(You are ${localPlayer})</span>`;
 const COMPLETE_MSG = `Board complete! please <a href="/">home</a> and create or join another board`
 
 const winningConditions = [
@@ -172,3 +172,7 @@ function handleRestartGame() {
 // init client
 document.querySelectorAll('.cell').forEach(cell => cell.addEventListener('click', handleCellClick));
 document.querySelector('.game--restart').addEventListener('click', handleRestartGame);
+
+window.addEventListener('beforeunload', function(event) {
+    io.send(`LEAVE:${localPlayer}`);
+});

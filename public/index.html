@@ -16,6 +16,20 @@
   <link rel="stylesheet" href="/public/styles/custom.css">
 
 <style>
+html, body {
+    height: 100%;
+}
+
+div.container.wrapper {
+    display: table;
+    height: 100%;
+    width: 100%;
+}
+
+#footer {
+    /* Placeholder footer styles */
+    text-align: center;
+}
 
 div.container {
     max-width: inherit;
@@ -33,6 +47,10 @@ color: #444;
     border-radius: 5px;
     background-color: #DEA584;
     box-shadow: 0 0 5px rgba(0,0,0,.1), 0 3px 6px rgba(0,0,0,.05);
+}
+
+span.inspired {
+    font-size: 1.5rem;
 }
 
 pre.explain {
@@ -64,7 +82,18 @@ button.game--start {
     margin-right: 15px;
 }
 
+
 </style>
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SNYYH5DRGL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-SNYYH5DRGL');
+</script>
 </head>
 
 <body>
@@ -74,14 +103,16 @@ button.game--start {
         <ul class="navbar-list">
           <li class="navbar-item"><a class="navbar-link" href="/">Home</a></li>
           <li class="navbar-item"><a class="navbar-link"
-              href="">GH Repo</a></li>
+              href="https://github.com/pepoviola/tic-tac-tide">GH Repo</a></li>
         </ul>
       </div>
     </nav>
     <div class="container" id="main">
     <section>
         <h1 class="game--title">Tic Tac <span class="tide">Tide</span></h1>
-        <pre class="explain">Tic Tac Tide is an example project for exploring how to use WebSocket and <a href="https://github.com/http-rs/tide" target="_blank">Tide</a>.</pre>
+        <pre class="explain">Tic Tac Tide is an example project for exploring how to use WebSocket and <a href="https://github.com/http-rs/tide" target="_blank">Tide</a>.
+        <span class="inspired">Inspired (and based) by <a href="https://github.com/jbr/littoral" target="_blank">littoral</a>.</span>
+        </pre>
         <div class="help">
             <span class="">You can Start a new game and share the link to play with someone OR Join a random game.</span>
         </div>
@@ -92,7 +123,6 @@ button.game--start {
     </section>
     </div>
   </div>
-
   <script>
     document.addEventListener("DOMContentLoaded", function() {
         document.querySelector('.game--start').addEventListener('click', handleStartGame);

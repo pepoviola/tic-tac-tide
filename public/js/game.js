@@ -49,7 +49,7 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 //
-const winningMessage = () => `Player ${currentPlayer} has won!`;
+const winningMessage = () => `Player <span class="tide">${currentPlayer}</span> has won!`;
 const drawMessage = () => `Game ended in a draw!`;
 const currentPlayerTurn = () => `It's <span class="tide">${currentPlayer}</span>'s turn. <span class="game--player">(You are ${localPlayer})</span>`;
 const COMPLETE_MSG = `Board complete! please <a href="/">home</a> and create or join another board`
@@ -140,10 +140,6 @@ function handleResultValidation() {
         gameActive = false;
         return true;
     }
-
-    // handlePlayerChange();
-    // io.send('play');
-
 }
 
 function handleCellClick(clickedCellEvent) {
@@ -161,11 +157,6 @@ function handleCellClick(clickedCellEvent) {
 function handleRestartGame() {
     reset_by_me = true;
     io.send( `RESET:${localPlayer}` );
-    // gameState = ["", "", "", "", "", "", "", "", ""];
-    // statusDisplay.innerHTML = currentPlayerTurn();
-    // document.querySelectorAll('.cell').forEach(cell => {
-    //     cell.classList.remove("x". "o");
-    // });
 }
 
 

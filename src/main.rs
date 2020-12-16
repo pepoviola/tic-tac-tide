@@ -262,6 +262,8 @@ async fn main() -> Result<(), std::io::Error> {
             board_name = b.0.to_owned()
         }
 
+        drop(boards);
+
         println!("board_name : {}", board_name);
         Ok( json!({ "board_name" :board_name}))
     });

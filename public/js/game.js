@@ -94,7 +94,7 @@ function redrawPlayBook() {
     document.querySelectorAll('.cell').forEach( cell => {
         const play = gameState[ cell.dataset.cellIndex ];
         if( play !== "" ) cell.classList.add(play.toLocaleLowerCase());
-        else cell.classList.remove( "x", "o" );
+        else cell.classList.remove( "x", "o", "win" );
     });
 }
 

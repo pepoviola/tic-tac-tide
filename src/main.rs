@@ -1,25 +1,26 @@
 use std::collections::hash_map::{Entry,HashMap};
 use async_std::sync::{Arc, RwLock};
-use broadcaster::BroadcastChannel;
-use futures_util::future::Either;
 use futures_util::StreamExt;
-use serde_derive::Serialize;
+use serde_derive::{Serialize,Deserialize};
 use serde_json::json;
-use tide::http::format_err;
 use tide::Body;
 use tide::Request;
-// use tide_websockets::{WebSocketConnection, async_tungstenite::tungstenite::{Message as WSMessage}};
-// use tide_websockets::WebsocketMiddleware;
 use tide_websockets::{Message as WSMessage, WebSocket, WebSocketConnection};
 
+// #[derive(Clone, Debug, Serialize)]
+// enum Message {
+//     Command { cmd: String, play_book: [String;9] }
+// }
+
 #[derive(Clone, Debug, Serialize)]
-enum Message {
-    Command { cmd: String, play_book: [String;9] }
+struct GameCommand {
+    cmd: String,
+    play_book: [String;9]
 }
 
 #[derive(Clone)]
 struct Player {
-    id: String, // connection Id
+    id: PlayerId, // connection Id
     wsc : WebSocketConnection,
     label : String
 }
@@ -30,22 +31,31 @@ struct Board {
     players: Vec<Player>
 }
 
+#[derive(Clone,Serialize,Deserialize,PartialEq,Eq)]
+struct PlayerId {
+    id: String,
+}
 
+impl Default for PlayerId {
+    fn default() -> Self {
+        Self {
+            id: String::from("")
+        }
+    }
+}
 #[derive(Clone)]
 struct State {
-    broadcaster: BroadcastChannel<Message>,
     boards: Arc<RwLock<HashMap<String,Board>>>,
 }
 
 impl State {
     fn new() -> Self {
         Self {
-            broadcaster: BroadcastChannel::new(),
             boards: Default::default(),
         }
     }
 
-    async fn add_player_to_board(&self, board_id: &str, mut player: Player ) -> Result<(String,[String;9]),String> { // tide::Result<()> {
+    async fn add_player_to_board(&self, board_id: &str, mut player: Player ) -> Result<(String,[String;9]),String> {
         let mut boards = self.boards.write().await;
         match boards.entry(board_id.to_owned()) {
             Entry::Vacant(_) => {
@@ -61,9 +71,25 @@ impl State {
             Entry::Occupied(mut board) => {
                 // check if we had the two players
                 let mut players = board.get_mut().players.clone();
+                println!("{:?}", players.len());
+
+                // check if already in the board
+                let p = players.clone().into_iter().filter(|x| {
+                    x.id == player.id
+                 }).collect::<Vec<Player>>();
+
+                if p.len() == 1 {
+                    let label = p[0].label.clone();
+                    board.get_mut().players = players;
+                    return Ok((label,board.get().play_book.clone()))
+                }
+
+
+                println!("{:?}", players.len());
+                // check if we can add to the board
                 if players.len() < 2 {
                     let other_player = &players[0];
-                    player.label = if other_player.label == "X" { String::from("O")} else { String::from("O") };
+                    player.label = if other_player.label == "X" { String::from("O")} else { String::from("X") };
 
                     let label = player.label.clone();
                     players.push( player );
@@ -89,7 +115,7 @@ impl State {
 
         let cmd = String::from("STATE");
         println!("{} to send state", board_id);
-        self.send_message(board_id, Message::Command{ cmd, play_book : pb }).await
+        self.send_message(board_id, GameCommand { cmd, play_book : pb }).await
     }
 
     async fn reset_board( &self, board_id: &str) -> tide::Result<()> {
@@ -102,10 +128,10 @@ impl State {
         drop(boards);
 
         let cmd = String::from("RESET");
-        self.send_message(board_id, Message::Command{ cmd, play_book : Default::default() }).await
+        self.send_message(board_id, GameCommand{ cmd, play_book : Default::default() }).await
     }
 
-    async fn leave_board( &self, board_id: &str, player_id: &str) -> tide::Result<()> {
+    async fn leave_board( &self, board_id: &str, player_id: PlayerId) -> tide::Result<()> {
         let mut boards = self.boards.write().await;
         let mut board = boards.get_mut(board_id).unwrap();
 
@@ -118,30 +144,24 @@ impl State {
         drop(boards);
 
         let cmd = String::from("LEAVE");
-        self.send_message(board_id, Message::Command{ cmd, play_book : pb }).await
+        self.send_message(board_id, GameCommand{ cmd, play_book : pb }).await
     }
 
 
-    async fn send_message(&self, board_id: &str, message: Message) -> tide::Result<()> {
+    async fn send_message(&self, board_id: &str, message: GameCommand) -> tide::Result<()> {
         let mut boards = self.boards.write().await;
         match boards.entry(board_id.to_owned()) {
             Entry::Vacant(_) => {
                 println!("{} vacant", board_id);
             },
             Entry::Occupied(mut board) => {
-
-                match message {
-                    Message::Command { cmd, play_book } => {
-                        println!("{} messages", board_id);
-                        for player in &board.get_mut().players {
-                            println!("{} message {}", board_id, cmd);
-                            player.wsc.send_json(&json!({
-                                "cmd": cmd,
-                                "play_book" : play_book.clone()
-                            })).await?
-                        }
-                    }
-                };
+                for player in &board.get_mut().players {
+                    println!("{} message {}", board_id, message.cmd);
+                    player.wsc.send_json(&json!({
+                        "cmd": message.cmd,
+                        "play_book" : message.play_book
+                    })).await?
+                }
             }
         }
 
@@ -156,34 +176,24 @@ async fn main() -> Result<(), std::io::Error> {
 
     let mut app = tide::with_state(State::new());
 
-    let mut state = app.state().clone();
-    async_std::task::spawn(async move {
-        while let Some(message) = state.broadcaster.next().await {
-            match message {
-                Message::Command { cmd, play_book } => println!("Cmd - {}: {:?}", cmd, play_book),
-            };
-        }
-        tide::Result::Ok(())
-    });
-
     app.at("/:id")
         .with(WebSocket::new(
-            |request: Request<State>, wsc| async move {
+            |request: Request<State>, mut wsc| async move {
                 let key = request.param("id")?;
+                let client: PlayerId  = request.query().unwrap_or_default();
 
+                println!("{:?}", wsc);
                 let state = request.state().clone();
-                let broadcaster = state.broadcaster.clone();
-
-                let mut combined_stream = futures_util::stream::select(
-                    wsc.clone().map(|l| Either::Left(l)),
-                    broadcaster.clone().map(|r| Either::Right(r)),
-                );
 
                 let petnames = petname::Petnames::default();
-                let player_id = petnames.generate_one(2, ".");
+                let player_id = if client.id.eq("") {
+                    PlayerId { id : petnames.generate_one(2, ".") }
+                } else {
+                    PlayerId { id : client.id }
+                };
 
                 let player = Player {
-                    id : player_id.clone(),
+                    id :    player_id.clone(),
                     wsc : wsc.clone(),
                     label: String::from("")
                 };
@@ -193,7 +203,8 @@ async fn main() -> Result<(), std::io::Error> {
                         wsc.send_json(&json!({
                             "cmd":"INIT",
                             "player":player_label,
-                            "play_book" : play_book.clone()
+                            "play_book" : play_book,
+                            "client_id" : player_id.id
                         })).await?
                     }
                     Err(_) => {
@@ -203,38 +214,21 @@ async fn main() -> Result<(), std::io::Error> {
                     }
                 }
 
-                while let Some(item) = combined_stream.next().await {
-                    match item {
-                        Either::Left(Ok(WSMessage::Text(message))) => {
-                            println!("{:?}", message);
-                            let parts: Vec<&str> = message.split(":").collect();
+                while let Some(Ok(WSMessage::Text(message))) = wsc.next().await {
+                    println!("{:?}", message);
+                    let parts: Vec<&str> = message.split(":").collect();
 
-                            match parts[0] {
-                                "PLAY" => {
-                                    state.make_play_in_board(key, parts[1].parse().unwrap(), parts[2].parse().unwrap()).await?;
-                                },
-                                "RESET" => {
-                                    state.reset_board(key).await?;
-                                },
-                                "LEAVE" => {
-                                    state.leave_board(key, &player_id).await?;
-                                }
-                                _ => println!( "INVALID message")
-                            }
+                    match parts[0] {
+                        "PLAY" => {
+                            state.make_play_in_board(key, parts[1].parse().unwrap(), parts[2].parse().unwrap()).await?;
+                        },
+                        "RESET" => {
+                            state.reset_board(key).await?;
+                        },
+                        "LEAVE" => {
+                            state.leave_board(key, player_id.clone()).await?;
                         }
-
-
-                        Either::Right(Message::Command { cmd, play_book }) => {
-                            wsc.send_json(
-                                &json!({ "cmd" : cmd, "play_book": play_book }),
-                            )
-                            .await?;
-                        }
-
-                        o => {
-                            log::debug!("{:?}", o);
-                            return Err(format_err!("no idea"));
-                        }
+                        _ => println!( "INVALID message")
                     }
                 }
 

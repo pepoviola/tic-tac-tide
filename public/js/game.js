@@ -1,7 +1,29 @@
 let io;
+let client_id;
+let gameActive = false;
+let currentPlayer = "";
+let localPlayer = "";
+let gameState = ["", "", "", "", "", "", "", "", ""];
+let reset_by_me = false;
+
+function isOpen() { return io && io.readyState === io.OPEN };
+function ioConn() {
+    let url = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}${window.location.pathname}`;
+    if( client_id ) url += `?c=${client_id}`;
+    if( ! isOpen() ) io = new WebSocket( url );
+}
+async function ioSend( msg ) {
+    if( ! isOpen() ) {
+        ioConn();
+        await new Promise(r => setTimeout(r, 500)); // wait half second to connect
+    }
+    io.send( msg );
+}
+
 document.addEventListener("DOMContentLoaded", function() {
     // connect to ws
-    io = new WebSocket( `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}${window.location.pathname}` );
+    // io = new WebSocket( `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}${window.location.pathname}` );
+    ioConn();
 
     io.addEventListener('message', message => {
         console.log('Message from server', message.data);
@@ -15,6 +37,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 break;
             case 'INIT':
                 console.log( 'init' );
+                client_id = data.client_id;
                 localPlayer = data.player == "X" ? "X" : "O";
                 gameState = data.play_book;
                 // redraw
@@ -50,9 +73,9 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 //
-const winningMessage = () => `Player <span class="tide">${currentPlayer}</span> has won!`;
+const winningMessage = () => `Player <span class="player ${currentPlayer}"></span> has won!`;
 const drawMessage = () => `Game ended in a draw!`;
-const currentPlayerTurn = () => `It's <span class="tide">${currentPlayer}</span>'s turn. <span class="game--player">(You are ${localPlayer})</span>`;
+const currentPlayerTurn = () => `It's <span class="player ${currentPlayer}"></span>'s turn. <span class="game--player">(You are <span class="player ${localPlayer}"></span>)</span>`;
 const COMPLETE_MSG = `Board complete! please <a href="/">home</a> and create or join another board`
 
 const winningConditions = [
@@ -68,14 +91,8 @@ const winningConditions = [
 
 
 
-let gameActive = false;
-let currentPlayer = "";
-let localPlayer = "";
-let gameState = ["", "", "", "", "", "", "", "", ""];
-let reset_by_me = false;
-
 function init() {
-    io.send('play');
+    ioSend('play');
 }
 
 
@@ -86,7 +103,7 @@ function handleCellPlayedLocally(clickedCell, clickedCellIndex) {
     gameState[clickedCellIndex] = currentPlayer;
     //clickedCell.innerHTML = currentPlayer;
     clickedCell.classList.add(currentPlayer.toLocaleLowerCase());
-    io.send( `PLAY:${localPlayer}:${clickedCellIndex }` );
+    ioSend( `PLAY:${localPlayer}:${clickedCellIndex }` );
     gameActive = false;
 }
 
@@ -157,7 +174,7 @@ function handleCellClick(clickedCellEvent) {
 
 function handleRestartGame() {
     reset_by_me = true;
-    io.send( `RESET:${localPlayer}` );
+    ioSend( `RESET:${localPlayer}` );
 }
 
 
@@ -166,5 +183,5 @@ document.querySelectorAll('.cell').forEach(cell => cell.addEventListener('click'
 document.querySelector('.game--restart').addEventListener('click', handleRestartGame);
 
 window.addEventListener('beforeunload', function(event) {
-    io.send(`LEAVE:${localPlayer}`);
+    ioSend(`LEAVE:${localPlayer}`);
 });

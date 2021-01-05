@@ -68,15 +68,22 @@ color: #444;
     font-size: 60px;
 }
 
-div.cell.x::after {
-  content: "X";
+
+div.cell.x {
+  background-image: url(/public/img/http_rs_tide.jpeg);
+  background-size: contain;
 }
-div.cell.o::after {
-  content: "O";
+
+div.cell.o {
+  background-image: url(/public/img/http_rs_surf.jpeg);
+  background-size: contain;
 }
-div.cell.win {
+
+
+div.cell.x.win, div.cell.o.win {
   background: url(https://avatars2.githubusercontent.com/u/56456261?s=100&v=4);
 }
+
 div.cell.x.win::after, div.cell.o.win::after {
   content: "";
 }
@@ -88,6 +95,22 @@ button.hidden {
 h2.complete {
   font-size: 2rem;
   color: red;
+}
+
+span.player {
+    background-size: contain;
+    width: 50px;
+    display: inline-block;
+    height: 50px;
+    vertical-align: middle;
+}
+
+span.player.X {
+      background-image: url(/public/img/http_rs_tide.jpeg);
+}
+
+span.player.O {
+      background-image: url(/public/img/http_rs_surf.jpeg);
 }
 </style>
 

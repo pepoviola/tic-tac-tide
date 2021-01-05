@@ -40,6 +40,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 client_id = data.client_id;
                 localPlayer = data.player == "X" ? "X" : "O";
                 gameState = data.play_book;
+                if( localPlayer === 'X' ) document.querySelector( '.game--intro' ).classList.remove( 'hide' );
                 // redraw
                 redrawPlayBook();
                 handlePlayerChange();
@@ -108,11 +109,16 @@ function handleCellPlayedLocally(clickedCell, clickedCellIndex) {
 }
 
 function redrawPlayBook() {
+    let plays = 0;
     document.querySelectorAll('.cell').forEach( cell => {
         const play = gameState[ cell.dataset.cellIndex ];
-        if( play !== "" ) cell.classList.add(play.toLocaleLowerCase());
-        else cell.classList.remove( "x", "o", "win" );
+        if( play !== "" ) {
+            cell.classList.add(play.toLocaleLowerCase());
+            plays++;
+        } else cell.classList.remove( "x", "o", "win" );
     });
+
+    if( plays > 1 ) document.querySelector( '.game--intro' ).classList.add( 'hide' );
 }
 
 function handlePlayerChange() {

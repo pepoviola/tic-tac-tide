@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-  <title>Tic Tac Tide</title>
+  <title>Tic Tac Tide - Board </title>
   <meta charset="utf-8">
   <!-- Primary Meta Tags -->
     <title>Tic Tac Tide - a WebSocket example with Tide</title>
@@ -27,11 +27,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="apple-mobile-web-app-capable" content="yes" />
 
-
   <link href='//fonts.googleapis.com/css?family=Raleway:400,300,600' rel='stylesheet' type='text/css'>
-  <link rel="stylesheet" href="/public/styles/normalize.css">
-  <link rel="stylesheet" href="/public/styles/skeleton.css">
-  <link rel="stylesheet" href="/public/styles/custom.css">
+  <link rel="stylesheet" href="/public/css/normalize.css">
+  <link rel="stylesheet" href="/public/css/skeleton.css">
+  <link rel="stylesheet" href="/public/css/custom.css">
 
 <style>
 section {
@@ -117,20 +116,9 @@ span.player.O {
   display: none;
 }
 </style>
-
-<!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-SNYYH5DRGL"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-SNYYH5DRGL');
-</script>
 </head>
-
 <body>
-  <div class="container">
+ <div class="container">
     <nav class="navbar">
       <div class="container">
         <ul class="navbar-list">
@@ -162,6 +150,14 @@ span.player.O {
   </div>
 
   <script src="public/js/game.js"></script>
+<script>
+/*let io;
+document.addEventListener("DOMContentLoaded", function() {
+    // connect to ws
+    const ws_url = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}${window.location.pathname}`;
+    io = new WebSocket( ws_url );
+} );
+*/
+</script>
 </body>
-
 </html>

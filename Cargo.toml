@@ -18,8 +18,8 @@ serde = { version = "1.0.118", features = ["derive"] }
 serde_derive = "1.0.118"
 dotenv = "0.15.0"
 
-[patch.crates-io.tide-websockets]
-path = "../http-rs/tide-websockets/"
+#[patch.crates-io.tide-websockets]
+#path = "../http-rs/tide-websockets/"
 # git = "https://github.com/http-rs/tide-websockets"
 # branch = "main"
 

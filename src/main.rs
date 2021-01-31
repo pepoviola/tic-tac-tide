@@ -171,6 +171,7 @@ async fn main() -> Result<(), std::io::Error> {
     app.at("/:id")
             .with(WebSocket::new(
                 |req: Request<State>, mut wsc: WebSocketConnection| async move {
+                    println!("{:?}", wsc);
                     let board_id = req.param("id")?;
                     let client: PlayerId  = req.query().unwrap_or_default();
                     let state = req.state().clone();

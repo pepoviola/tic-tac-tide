@@ -31,7 +31,10 @@ RUN apt-get update -y \
 RUN update-ca-certificates
 
 COPY --from=builder /app/target/release/tic-tac-tide tic-tac-tide
+# copy assets
+COPY ./public ./public
 
 EXPOSE 5000
 
 ENTRYPOINT ["./tic-tac-tide"]
+
